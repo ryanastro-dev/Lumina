@@ -1,7 +1,13 @@
 from uuid import uuid4
 
 from qdrant_client import QdrantClient
-from qdrant_client.http.models import Distance, PointStruct, ScoredPoint, VectorParams
+from qdrant_client.http.models import (
+    Distance,
+    PointStruct,
+    QueryRequest,
+    ScoredPoint,
+    VectorParams,
+)
 
 from app.config import Settings
 
@@ -73,3 +79,23 @@ class QdrantStore:
             with_vectors=False,
         )
         return response.points
+
+    def search_batch(self, query_vectors: list[list[float]], limit: int) -> list[list[ScoredPoint]]:
+        if not query_vectors:
+            return []
+
+        requests = [
+            QueryRequest(
+                query=query_vector,
+                limit=limit,
+                with_payload=True,
+                with_vector=False,
+            )
+            for query_vector in query_vectors
+        ]
+
+        responses = self.client.query_batch_points(
+            collection_name=self.settings.qdrant_collection,
+            requests=requests,
+        )
+        return [response.points for response in responses]

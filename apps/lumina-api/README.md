@@ -26,6 +26,9 @@ Default port: `8080`
 - `LUMINA_JOB_RETENTION_HOURS` (default: `168`)
 - `LUMINA_JOB_CLEANUP_INTERVAL_MINUTES` (default: `60`)
 - `POSTGRES_DSN`
+- `LUMINA_DB_MAX_OPEN_CONNS` (default: `25`)
+- `LUMINA_DB_MAX_IDLE_CONNS` (default: `10`)
+- `LUMINA_DB_CONN_MAX_LIFETIME_MINUTES` (default: `5`)
 
 At startup, the service validates DB connectivity and ensures required tables exist (`scan_jobs`, `scan_matches`). A background cleanup loop periodically deletes stale terminal jobs (`completed`, `failed`, `canceled`) older than the configured retention window. Runtime cleanup metrics are exposed at `GET /health/cleanup`.
 

@@ -213,33 +213,39 @@ func (s *PostgresStore) MarkFailed(ctx context.Context, jobID, errorMessage stri
 	}
 
 	const query = `
-		UPDATE scan_jobs
-		SET status = $2,
-		    error_message = $3,
-		    completed_at = $4
-		WHERE id = $1
-		  AND status IN ($5, $6)
+		WITH target AS (
+			SELECT status
+			FROM scan_jobs
+			WHERE id = $1
+			FOR UPDATE
+		), updated AS (
+			UPDATE scan_jobs
+			SET status = $2,
+			    error_message = $3,
+			    completed_at = $4
+			WHERE id = $1
+			  AND status IN ($5, $6)
+			RETURNING status
+		)
+		SELECT
+			EXISTS(SELECT 1 FROM updated),
+			COALESCE((SELECT status FROM updated), (SELECT status FROM target))
 	`
 
-	result, err := s.db.ExecContext(ctx, query, jobID, StatusFailed, strings.TrimSpace(errorMessage), completedAt, StatusPending, StatusRunning)
+	var (
+		updated bool
+		status  string
+	)
+
+	err := s.db.QueryRowContext(ctx, query, jobID, StatusFailed, strings.TrimSpace(errorMessage), completedAt, StatusPending, StatusRunning).Scan(&updated, &status)
 	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return ErrNotFound
+		}
 		return fmt.Errorf("mark failed: %w", err)
 	}
 
-	rowsAffected, err := result.RowsAffected()
-	if err != nil {
-		return fmt.Errorf("mark failed rows affected: %w", err)
-	}
-	if rowsAffected > 0 {
-		return nil
-	}
-
-	status, err := s.currentStatus(ctx, jobID)
-	if err != nil {
-		return err
-	}
-
-	if status == StatusFailed {
+	if updated || status == StatusFailed {
 		return nil
 	}
 
@@ -257,33 +263,39 @@ func (s *PostgresStore) MarkCanceled(ctx context.Context, jobID, reason string, 
 	}
 
 	const query = `
-		UPDATE scan_jobs
-		SET status = $2,
-		    error_message = $3,
-		    completed_at = $4
-		WHERE id = $1
-		  AND status IN ($5, $6)
+		WITH target AS (
+			SELECT status
+			FROM scan_jobs
+			WHERE id = $1
+			FOR UPDATE
+		), updated AS (
+			UPDATE scan_jobs
+			SET status = $2,
+			    error_message = $3,
+			    completed_at = $4
+			WHERE id = $1
+			  AND status IN ($5, $6)
+			RETURNING status
+		)
+		SELECT
+			EXISTS(SELECT 1 FROM updated),
+			COALESCE((SELECT status FROM updated), (SELECT status FROM target))
 	`
 
-	result, err := s.db.ExecContext(ctx, query, jobID, StatusCanceled, reason, completedAt, StatusPending, StatusRunning)
+	var (
+		updated bool
+		status  string
+	)
+
+	err := s.db.QueryRowContext(ctx, query, jobID, StatusCanceled, reason, completedAt, StatusPending, StatusRunning).Scan(&updated, &status)
 	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return ErrNotFound
+		}
 		return fmt.Errorf("mark canceled: %w", err)
 	}
 
-	rowsAffected, err := result.RowsAffected()
-	if err != nil {
-		return fmt.Errorf("mark canceled rows affected: %w", err)
-	}
-	if rowsAffected > 0 {
-		return nil
-	}
-
-	status, err := s.currentStatus(ctx, jobID)
-	if err != nil {
-		return err
-	}
-
-	if status == StatusCanceled {
+	if updated || status == StatusCanceled {
 		return nil
 	}
 

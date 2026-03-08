@@ -32,9 +32,10 @@ store = QdrantStore(settings)
 async def lifespan(_: FastAPI):
     try:
         store.ensure_collection()
+        embed_texts(["warmup"], settings.embedding_model)
     except Exception as exc:  # noqa: BLE001
         raise RuntimeError(
-            "Unable to connect to Qdrant. Start Qdrant before running the API."
+            "Unable to initialize Qdrant or embedding model. Start Qdrant and verify model access."
         ) from exc
     yield
 
@@ -160,18 +161,18 @@ def check_plagiarism(request: CheckRequest) -> CheckResponse:
 
     query_vectors = embed_texts(query_chunks, settings.embedding_model)
 
-    best_by_chunk: dict[tuple[str, str], MatchResult] = {}
-    for query_chunk, query_vector in zip(query_chunks, query_vectors, strict=True):
-        try:
-            candidates = store.search(query_vector=query_vector, limit=top_k)
-        except Exception as exc:  # noqa: BLE001
-            raise_api_error(
-                status_code=503,
-                error="vector_store_unavailable",
-                message="Qdrant search failed.",
-                details={"reason": str(exc)},
-            )
+    try:
+        candidate_batches = store.search_batch(query_vectors=query_vectors, limit=top_k)
+    except Exception as exc:  # noqa: BLE001
+        raise_api_error(
+            status_code=503,
+            error="vector_store_unavailable",
+            message="Qdrant search failed.",
+            details={"reason": str(exc)},
+        )
 
+    best_by_chunk: dict[tuple[str, str], MatchResult] = {}
+    for query_chunk, candidates in zip(query_chunks, candidate_batches, strict=True):
         for candidate in candidates:
             payload = candidate.payload or {}
             matched_text = str(payload.get("text", ""))
@@ -254,5 +255,3 @@ async def extract_pdf(file: UploadFile = File(...)) -> PdfExtractResponse:
         character_count=len(text),
         text=text,
     )
-
-

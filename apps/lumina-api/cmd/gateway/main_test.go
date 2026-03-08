@@ -1114,3 +1114,32 @@ func TestCheckJobSubmitAndPollFlowWithManager(t *testing.T) {
 
 	t.Fatalf("timed out waiting for check job completion")
 }
+
+func TestPlagiarismCheckRejectsOversizedJSONBody(t *testing.T) {
+	handler := newServerHandler(fakeEngineClient{}, "")
+	server := httptest.NewServer(handler)
+	defer server.Close()
+
+	overSizedText := strings.Repeat("a", maxJSONBodyBytes+1024)
+	payload := `{"text":"` + overSizedText + `"}`
+
+	resp, err := http.Post(server.URL+"/v1/plagiarism/check", "application/json", strings.NewReader(payload))
+	if err != nil {
+		t.Fatalf("post check: %v", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusBadRequest {
+		body, _ := io.ReadAll(resp.Body)
+		t.Fatalf("unexpected status %d: %s", resp.StatusCode, string(body))
+	}
+
+	var out apicontract.ErrorResponse
+	if err := json.NewDecoder(resp.Body).Decode(&out); err != nil {
+		t.Fatalf("decode error response: %v", err)
+	}
+
+	if out.Error != "invalid_json" {
+		t.Fatalf("unexpected error code: %s", out.Error)
+	}
+}

@@ -56,15 +56,6 @@ export async function ingestDocument(input: IngestRequest): Promise<IngestRespon
   return parseResponse<IngestResponse>(response);
 }
 
-export async function checkPlagiarism(input: CheckRequest): Promise<CheckResponse> {
-  const response = await fetch("/api/plagiarism/check", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(input),
-  });
-  return parseResponse<CheckResponse>(response);
-}
-
 export async function submitCheckJob(input: CheckRequest): Promise<CheckJobAcceptedResponse> {
   const response = await fetch("/api/plagiarism/check-jobs", {
     method: "POST",

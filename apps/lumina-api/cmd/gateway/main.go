@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"crypto/rand"
+	"crypto/subtle"
 	"database/sql"
 	"encoding/hex"
 	"encoding/json"
@@ -65,7 +66,11 @@ const (
 	defaultEngineTimeout             = 120
 	defaultJobRetentionHours         = 168
 	defaultJobCleanupIntervalMinutes = 60
+	defaultDBMaxOpenConns            = 25
+	defaultDBMaxIdleConns            = 10
+	defaultDBConnMaxLifetimeMins     = 5
 	maxPDFUploadBytes                = 10 << 20 // 10 MiB
+	maxJSONBodyBytes                 = 2 << 20  // 2 MiB
 
 	apiKeyHeader        = "X-API-Key"
 	protectedPathPrefix = "/v1/"
@@ -84,6 +89,12 @@ func main() {
 	engineTimeoutSeconds := envIntOrDefault("LUMINA_ENGINE_TIMEOUT_SECONDS", defaultEngineTimeout)
 	jobRetentionHours := envIntOrDefault("LUMINA_JOB_RETENTION_HOURS", defaultJobRetentionHours)
 	jobCleanupIntervalMinutes := envIntOrDefault("LUMINA_JOB_CLEANUP_INTERVAL_MINUTES", defaultJobCleanupIntervalMinutes)
+	dbMaxOpenConns := envIntOrDefault("LUMINA_DB_MAX_OPEN_CONNS", defaultDBMaxOpenConns)
+	dbMaxIdleConns := envIntOrDefault("LUMINA_DB_MAX_IDLE_CONNS", defaultDBMaxIdleConns)
+	dbConnMaxLifetimeMinutes := envIntOrDefault("LUMINA_DB_CONN_MAX_LIFETIME_MINUTES", defaultDBConnMaxLifetimeMins)
+	if dbMaxIdleConns > dbMaxOpenConns {
+		dbMaxIdleConns = dbMaxOpenConns
+	}
 
 	engineClient, err := lumina_engine.NewClient(engineBaseURL, &http.Client{Timeout: time.Duration(engineTimeoutSeconds) * time.Second})
 	if err != nil {
@@ -99,6 +110,9 @@ func main() {
 	if err != nil {
 		log.Fatalf("open postgres: %v", err)
 	}
+	db.SetMaxOpenConns(dbMaxOpenConns)
+	db.SetMaxIdleConns(dbMaxIdleConns)
+	db.SetConnMaxLifetime(time.Duration(dbConnMaxLifetimeMinutes) * time.Minute)
 	defer db.Close()
 
 	startupCtx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
@@ -131,6 +145,7 @@ func main() {
 	log.Printf("lumina-engine upstream: %s", engineBaseURL)
 	log.Printf("lumina-engine timeout: %ds", engineTimeoutSeconds)
 	log.Printf("postgres persistence: enabled")
+	log.Printf("postgres pool: max_open=%d max_idle=%d conn_max_lifetime=%dm", dbMaxOpenConns, dbMaxIdleConns, dbConnMaxLifetimeMinutes)
 	if cleanupSnapshot.Enabled {
 		log.Printf("job cleanup: enabled (retention=%ds interval=%ds)", cleanupSnapshot.RetentionSeconds, cleanupSnapshot.IntervalSeconds)
 	} else {
@@ -186,7 +201,7 @@ func withOptionalAPIKey(next http.Handler, apiKey string) http.Handler {
 		}
 
 		provided := strings.TrimSpace(r.Header.Get(apiKeyHeader))
-		if provided != trimmed {
+		if !constantTimeEqual(provided, trimmed) {
 			writeJSON(w, http.StatusUnauthorized, apicontract.ErrorResponse{
 				Error:   "unauthorized",
 				Message: "Missing or invalid API key.",
@@ -196,6 +211,10 @@ func withOptionalAPIKey(next http.Handler, apiKey string) http.Handler {
 
 		next.ServeHTTP(w, r)
 	})
+}
+
+func constantTimeEqual(a, b string) bool {
+	return subtle.ConstantTimeCompare([]byte(a), []byte(b)) == 1
 }
 
 func newRequestID() string {
@@ -267,7 +286,7 @@ func newServerMux(engineClient lumina_engine.Client, jobManager checkJobManager,
 		}
 
 		var request apicontract.IngestRequest
-		if err := decodeJSONBody(r, &request); err != nil {
+		if err := decodeJSONBody(w, r, &request); err != nil {
 			writeJSON(w, http.StatusBadRequest, apicontract.ErrorResponse{
 				Error:   "invalid_json",
 				Message: "Invalid request body.",
@@ -303,7 +322,7 @@ func newServerMux(engineClient lumina_engine.Client, jobManager checkJobManager,
 		}
 
 		var request apicontract.CheckRequest
-		if err := decodeJSONBody(r, &request); err != nil {
+		if err := decodeJSONBody(w, r, &request); err != nil {
 			writeJSON(w, http.StatusBadRequest, apicontract.ErrorResponse{
 				Error:   "invalid_json",
 				Message: "Invalid request body.",
@@ -469,7 +488,7 @@ func newServerMux(engineClient lumina_engine.Client, jobManager checkJobManager,
 		}
 
 		var request apicontract.CheckRequest
-		if err := decodeJSONBody(r, &request); err != nil {
+		if err := decodeJSONBody(w, r, &request); err != nil {
 			writeJSON(w, http.StatusBadRequest, apicontract.ErrorResponse{
 				Error:   "invalid_json",
 				Message: "Invalid request body.",
@@ -586,7 +605,11 @@ func mapCheckJobStatusResponse(job *jobs.Job) checkJobStatusResponse {
 	return response
 }
 
-func decodeJSONBody(r *http.Request, out any) error {
+func decodeJSONBody(w http.ResponseWriter, r *http.Request, out any) error {
+	if w != nil {
+		r.Body = http.MaxBytesReader(w, r.Body, maxJSONBodyBytes)
+	}
+
 	decoder := json.NewDecoder(r.Body)
 	decoder.DisallowUnknownFields()
 	if err := decoder.Decode(out); err != nil {

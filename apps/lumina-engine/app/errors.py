@@ -1,3 +1,5 @@
+from typing import NoReturn
+
 from fastapi import HTTPException
 
 
@@ -6,7 +8,7 @@ def raise_api_error(
     error: str,
     message: str,
     details: list[dict] | dict | None = None,
-) -> None:
+) -> NoReturn:
     normalized_details: list[dict] | None
     if details is None:
         normalized_details = None

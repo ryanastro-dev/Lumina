@@ -1,6 +1,6 @@
 from io import BytesIO
 
-from PyPDF2 import PdfReader
+from pypdf import PdfReader
 
 
 def extract_text_from_pdf_bytes(pdf_bytes: bytes) -> tuple[str, int]:
@@ -14,3 +14,4 @@ def extract_text_from_pdf_bytes(pdf_bytes: bytes) -> tuple[str, int]:
             pages.append(content)
 
     return "\n\n".join(pages), len(reader.pages)
+

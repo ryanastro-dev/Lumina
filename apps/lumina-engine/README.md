@@ -41,6 +41,12 @@ uv sync
 uv run uvicorn app.main:app --reload
 ```
 
+Run tests:
+```powershell
+uv sync --group dev
+uv run pytest
+```
+
 Health check:
 ```powershell
 curl http://127.0.0.1:8000/health

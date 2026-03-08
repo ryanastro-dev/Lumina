@@ -53,8 +53,9 @@ jobs:
       - name: AI engine compile check
         run: |
           cd apps/lumina-engine
-          uv sync --frozen
+          uv sync --frozen --group dev
           uv run python -m compileall app scripts
+          uv run pytest
 
   api:
     runs-on: ubuntu-latest
