@@ -15,6 +15,7 @@
   <img src="https://img.shields.io/badge/Go-1.26.1-00ADD8?style=flat-square&logo=go&logoColor=white" />
   <img src="https://img.shields.io/badge/Python-3.13-3776AB?style=flat-square&logo=python&logoColor=white" />
   <img src="https://img.shields.io/badge/FastAPI-0.135+-009688?style=flat-square&logo=fastapi&logoColor=white" />
+  <img src="https://img.shields.io/badge/MiniLM--L12--v2-384d%20Embeddings-FF6F00?style=flat-square&logo=huggingface&logoColor=white" />
   <img src="https://img.shields.io/badge/PostgreSQL-18-4169E1?style=flat-square&logo=postgresql&logoColor=white" />
   <img src="https://img.shields.io/badge/Qdrant-Vector%20DB-DC382D?style=flat-square&logo=qdrant&logoColor=white" />
   <img src="https://img.shields.io/badge/Docker-Compose-2496ED?style=flat-square&logo=docker&logoColor=white" />
@@ -73,6 +74,7 @@
 │                    AI Processing Layer                       │
 │                lumina-engine (Python / FastAPI)              │
 │   Chunking  •  Embedding  •  Matching  •  PDF Extraction    │
+│              Model: all-MiniLM-L12-v2 (384-dim)             │
 │                            │                                │
 │                      ┌─────▼─────┐                          │
 │                      │  Qdrant   │ (Vector storage)         │
@@ -420,6 +422,31 @@ GitHub Actions runs on every push to `main` and on pull requests:
 | `TOP_K`                | 5                   | Higher = more candidates evaluated per chunk      |
 | `EMBEDDING_MODEL`      | `all-MiniLM-L12-v2` | Change for different accuracy/speed tradeoffs     |
 
+### 🧠 Embedding Model — `all-MiniLM-L12-v2`
+
+Lumina uses [**sentence-transformers/all-MiniLM-L12-v2**](https://huggingface.co/sentence-transformers/all-MiniLM-L12-v2) as its default embedding model — a compact, high-performance transformer fine-tuned for semantic similarity.
+
+| Spec                    | Value                      |
+| ----------------------- | -------------------------- |
+| **Architecture**        | MiniLM (12-layer, 384-dim) |
+| **Parameters**          | 33M                        |
+| **Output Dimensions**   | 384                        |
+| **Max Sequence Length** | 256 tokens                 |
+| **Similarity Function** | Cosine Similarity          |
+| **Training Data**       | 1B+ sentence pairs         |
+| **Speed**               | ~2800 sentences/sec (GPU)  |
+| **Model Size**          | ~134 MB                    |
+
+**Why this model?**
+
+- ⚡ Excellent speed-to-accuracy ratio for real-time plagiarism scoring
+- 📐 384-dim vectors keep Qdrant storage lean while preserving semantic richness
+- 🎯 Fine-tuned on semantic textual similarity (STS) benchmarks
+- 🔄 Configurable via `EMBEDDING_MODEL` env var — swap to `all-mpnet-base-v2` (768-dim, higher accuracy) or `all-MiniLM-L6-v2` (384-dim, faster) without code changes
+
+> [!NOTE]
+> The model is pre-loaded during startup via warmup in the `lifespan` hook, so the first API request has zero cold-start latency.
+
 ---
 
 ## 📌 Version Baseline
@@ -445,5 +472,5 @@ This project is for educational and demonstration purposes.
 ---
 
 <p align="center">
-  <sub>Built with 🧠 AI + ❤️ Myanmar Engineering</sub>
+  <sub>Semantic intelligence meets precision engineering — crafted for academic integrity</sub>
 </p>
