@@ -33,7 +33,7 @@ function Invoke-ContractCodegen {
   }
 
   Write-Host "[$Name] Generating Go types..."
-  $goCode = go run github.com/oapi-codegen/oapi-codegen/v2/cmd/oapi-codegen@latest `
+  $goCodeRaw = go run github.com/oapi-codegen/oapi-codegen/v2/cmd/oapi-codegen@latest `
     -generate types `
     -package $GoPackage `
     $OpenApiPath
@@ -41,9 +41,9 @@ function Invoke-ContractCodegen {
     throw "[$Name] Go codegen failed (exit=$LASTEXITCODE)"
   }
 
-  $goTmp = "$GoOut.tmp"
-  Set-Content -Path $goTmp -Value $goCode -Encoding utf8
-  Move-Item -Force $goTmp $GoOut
+  $goCode = if ($goCodeRaw -is [array]) { ($goCodeRaw -join "`n") + "`n" } else { [string]$goCodeRaw }
+  $utf8NoBom = New-Object System.Text.UTF8Encoding($false)
+  [System.IO.File]::WriteAllText($GoOut, $goCode, $utf8NoBom)
 
   if (-not [string]::IsNullOrWhiteSpace($GoMirrorOut) -and (Test-Path (Split-Path $GoMirrorOut -Parent))) {
     Copy-Item -Force $GoOut $GoMirrorOut
@@ -80,3 +80,4 @@ if ($Target -eq "gateway" -or $Target -eq "all") {
 }
 
 Write-Host "All requested contract code generation completed."
+
