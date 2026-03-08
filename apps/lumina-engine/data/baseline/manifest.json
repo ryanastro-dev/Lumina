@@ -1,0 +1,90 @@
+{
+  "sources": [
+    {
+      "id": "src-ai-001",
+      "path": "sources/src_ai_essay.txt"
+    },
+    {
+      "id": "src-ethics-001",
+      "path": "sources/src_ml_ethics.txt"
+    },
+    {
+      "id": "src-cloud-001",
+      "path": "sources/src_cloud_security.txt"
+    },
+    {
+      "id": "src-energy-001",
+      "path": "sources/src_solar_energy.txt"
+    }
+  ],
+  "cases": [
+    {
+      "id": "case-exact-001",
+      "path": "cases/exact-copy/case_exact_001.txt",
+      "group": "exact-copy",
+      "expected_plagiarism": true,
+      "target_source_id": "src-ai-001"
+    },
+    {
+      "id": "case-exact-002",
+      "path": "cases/exact-copy/case_exact_002.txt",
+      "group": "exact-copy",
+      "expected_plagiarism": true,
+      "target_source_id": "src-cloud-001"
+    },
+    {
+      "id": "case-light-001",
+      "path": "cases/light-paraphrase/case_light_001.txt",
+      "group": "light-paraphrase",
+      "expected_plagiarism": true,
+      "target_source_id": "src-ethics-001"
+    },
+    {
+      "id": "case-light-002",
+      "path": "cases/light-paraphrase/case_light_002.txt",
+      "group": "light-paraphrase",
+      "expected_plagiarism": true,
+      "target_source_id": "src-energy-001"
+    },
+    {
+      "id": "case-heavy-001",
+      "path": "cases/heavy-paraphrase/case_heavy_001.txt",
+      "group": "heavy-paraphrase",
+      "expected_plagiarism": true,
+      "target_source_id": "src-ai-001"
+    },
+    {
+      "id": "case-heavy-002",
+      "path": "cases/heavy-paraphrase/case_heavy_002.txt",
+      "group": "heavy-paraphrase",
+      "expected_plagiarism": true,
+      "target_source_id": "src-cloud-001"
+    },
+    {
+      "id": "case-unrelated-001",
+      "path": "cases/unrelated/case_unrelated_001.txt",
+      "group": "unrelated",
+      "expected_plagiarism": false
+    },
+    {
+      "id": "case-unrelated-002",
+      "path": "cases/unrelated/case_unrelated_002.txt",
+      "group": "unrelated",
+      "expected_plagiarism": false
+    },
+    {
+      "id": "case-citation-001",
+      "path": "cases/proper-citation/case_citation_001.txt",
+      "group": "proper-citation",
+      "expected_plagiarism": false,
+      "target_source_id": "src-ethics-001"
+    },
+    {
+      "id": "case-citation-002",
+      "path": "cases/proper-citation/case_citation_002.txt",
+      "group": "proper-citation",
+      "expected_plagiarism": false,
+      "target_source_id": "src-energy-001"
+    }
+  ]
+}

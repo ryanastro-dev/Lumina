@@ -1,0 +1,93 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  contracts:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: apps/lumina-api/go.mod
+          cache-dependency-path: apps/lumina-api/go.sum
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: apps/lumina-web/package-lock.json
+
+      - name: Generate contract types (engine + gateway)
+        run: pwsh -File scripts/generate-contract-types.ps1 -Target all
+
+      - name: Verify generated contracts are up to date
+        run: |
+          git diff --exit-code -- \
+            contracts/codegen \
+            apps/lumina-api/internal/clients/lumina_engine/apicontract/lumina_engine_v1.gen.go \
+            apps/lumina-web/src/lib/api-client/apicontract.d.ts \
+            apps/lumina-web/src/lib/api-client/gateway-apicontract.d.ts
+
+  engine:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
+
+      - name: AI engine compile check
+        run: |
+          cd apps/lumina-engine
+          uv sync --frozen
+          uv run python -m compileall app scripts
+
+  api:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: apps/lumina-api/go.mod
+          cache-dependency-path: apps/lumina-api/go.sum
+
+      - name: API gateway tests
+        run: |
+          cd apps/lumina-api
+          go test ./...
+
+  web:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: apps/lumina-web/package-lock.json
+
+      - name: Web build
+        run: |
+          cd apps/lumina-web
+          npm ci
+          npm run build

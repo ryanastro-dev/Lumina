@@ -1,0 +1,44 @@
+# Environment
+.env
+.env.*
+!.env.example
+apps/**/.env
+apps/**/.env.*
+!apps/**/.env.example
+
+# Local runtime storage
+.qdrant/
+.postgres/
+.postgres18/
+
+# Python
+**/.venv/
+**/__pycache__/
+**/.pytest_cache/
+**/.mypy_cache/
+**/.ruff_cache/
+**/*.py[cod]
+
+# Node / Next
+**/node_modules/
+**/.next/
+**/.turbo/
+**/dist/
+**/build/
+**/coverage/
+
+# IDE
+.vscode/
+.idea/
+
+# OS / editor noise
+.DS_Store
+Thumbs.db
+desktop.ini
+*.log
+*.tmp
+*.swp
+*.swo
+
+# Generated local reports
+apps/lumina-engine/data/baseline/report*.json

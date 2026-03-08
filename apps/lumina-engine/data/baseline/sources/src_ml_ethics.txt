@@ -1,0 +1,1 @@
+Machine learning ethics focuses on fairness, accountability, and transparency. Teams should document training data decisions, audit models for biased outcomes, and provide clear explanations when automated systems affect people. Ethical governance is not a one time checklist; it is an ongoing process integrated into product development.

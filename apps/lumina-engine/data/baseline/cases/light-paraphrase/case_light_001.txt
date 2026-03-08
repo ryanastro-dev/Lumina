@@ -1,0 +1,1 @@
+Ethical machine learning emphasizes fairness, transparency, and accountability. Teams need to record how training data was selected, check models for biased results, and explain decisions when automation affects users.

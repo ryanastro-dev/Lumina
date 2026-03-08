@@ -1,0 +1,1 @@
+As one ethics guide states, "ethical governance is not a one time checklist; it is an ongoing process integrated into product development" (Source: internal ML ethics notes). This sentence is intentionally quoted and cited.

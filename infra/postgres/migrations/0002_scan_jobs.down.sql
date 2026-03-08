@@ -1,0 +1,2 @@
+DROP TABLE IF EXISTS scan_matches;
+DROP TABLE IF EXISTS scan_jobs;

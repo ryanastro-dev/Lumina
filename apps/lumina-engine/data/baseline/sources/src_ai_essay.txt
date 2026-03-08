@@ -1,0 +1,1 @@
+Artificial intelligence systems can detect plagiarism by transforming passages into vectors and searching for close matches in a semantic index. This method catches copied meaning even when words are changed. Exact matching still matters for direct copying, so modern pipelines usually combine lexical overlap with vector similarity to produce a final plagiarism score.

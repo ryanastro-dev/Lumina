@@ -1,0 +1,1 @@
+Plagiarism tools now compare meaning, not only matching phrases. They map writing into numeric representations and retrieve nearby passages in a vector index, which helps reveal copied ideas after strong rewording.

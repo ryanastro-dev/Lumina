@@ -1,0 +1,1 @@
+Modern enterprise defense avoids trusting internal network traffic by default. Access is granted only after repeated identity and device checks, and risk is lowered through narrow permissions plus continuous anomaly monitoring.

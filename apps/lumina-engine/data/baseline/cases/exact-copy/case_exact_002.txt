@@ -1,0 +1,1 @@
+Cloud security strategies increasingly use a zero trust model. Instead of assuming traffic is safe inside a network boundary, zero trust requires continuous verification of identity, device health, and permissions.
